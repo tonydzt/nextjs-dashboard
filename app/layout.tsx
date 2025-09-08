@@ -2,6 +2,7 @@ import '@/app/ui/global.css';
 import { inter } from '@/app/ui/fonts';
 
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import GoogleAnalytics from './components/google-analytics';
  
 export const metadata: Metadata = {
@@ -21,7 +22,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <GoogleAnalytics />
+        <Suspense>
+          <GoogleAnalytics />
+        </Suspense>
         {children}
       </body>
     </html>
