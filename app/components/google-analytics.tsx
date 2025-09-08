@@ -4,11 +4,19 @@ import Script from 'next/script';
 import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
+// 定义更具体的类型来替代any
+interface GTagEventParams {
+  event_category?: string;
+  event_label?: string;
+  value?: number;
+  [key: string]: any; // 保留一定的灵活性
+}
+
 // 扩展Window接口以支持gtag函数
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
-    dataLayer?: any[];
+    gtag?: (...args: (string | GTagEventParams)[]) => void;
+    dataLayer?: (string | GTagEventParams)[];
   }
 }
 
@@ -24,20 +32,14 @@ interface GoogleAnalyticsProps {
  * 用于在Next.js 15.x项目中集成GA4
  */
 export default function GoogleAnalytics({ debug = false }: GoogleAnalyticsProps) {
+  // 所有Hooks必须在条件返回之前调用
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // 检查是否配置了GA测量ID
-  if (!GA_MEASUREMENT_ID) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('Google Analytics未配置，请在.env文件中添加NEXT_PUBLIC_GA_MEASUREMENT_ID');
-    }
-    return null;
-  }
-
   // 监听路由变化并发送页面浏览事件
   useEffect(() => {
-    if (!pathname) return;
+    // 在effect内部检查是否配置了GA测量ID
+    if (!GA_MEASUREMENT_ID || !pathname) return;
 
     const url = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     
@@ -50,6 +52,14 @@ export default function GoogleAnalytics({ debug = false }: GoogleAnalyticsProps)
     }
   }, [pathname, searchParams, debug]);
 
+  // 检查是否配置了GA测量ID
+  if (!GA_MEASUREMENT_ID) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Google Analytics未配置，请在.env文件中添加NEXT_PUBLIC_GA_MEASUREMENT_ID');
+    }
+    return null;
+  }
+
   return (
     <>
       {/* Global Site Tag (gtag.js) - Google Analytics */}
@@ -58,18 +68,16 @@ export default function GoogleAnalytics({ debug = false }: GoogleAnalyticsProps)
         strategy="afterInteractive"
       />
       <Script id="google-analytics-init" strategy="afterInteractive">
-        {
-          `
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            
-            gtag('config', '${GA_MEASUREMENT_ID}', {
-              page_path: window.location.pathname,
-              debug_mode: ${debug},
-            });
-          `
-        }
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          
+          gtag('config', '${GA_MEASUREMENT_ID}', {
+            page_path: window.location.pathname,
+            debug_mode: ${debug},
+          });
+        `}
       </Script>
     </>
   );
