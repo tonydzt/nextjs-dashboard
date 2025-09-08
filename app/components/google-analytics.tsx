@@ -4,19 +4,25 @@ import Script from 'next/script';
 import { useEffect } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-// 定义更具体的类型来替代any
+// 定义Google Analytics事件参数类型
 interface GTagEventParams {
   event_category?: string;
   event_label?: string;
   value?: number;
-  [key: string]: any; // 保留一定的灵活性
+  debug_mode?: boolean;
+  page_path?: string;
+  // 允许其他未知属性
+  [key: string]: string | number | boolean | object | undefined;
 }
+
+// 定义gtag函数参数类型
+type GTagArgs = string | GTagEventParams;
 
 // 扩展Window接口以支持gtag函数
 declare global {
   interface Window {
-    gtag?: (...args: (string | GTagEventParams)[]) => void;
-    dataLayer?: (string | GTagEventParams)[];
+    gtag?: (...args: GTagArgs[]) => void;
+    dataLayer?: GTagArgs[];
   }
 }
 
